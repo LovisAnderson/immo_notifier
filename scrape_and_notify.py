@@ -3,6 +3,8 @@ import re
 import json
 import smtplib, ssl
 from login import *
+from pathlib import Path
+
 
 # Create a secure SSL context
 context = ssl.create_default_context()
@@ -18,8 +20,9 @@ def ids_from_immoscout_listings_source(search_url):
     ids = [match.split("\"")[1] for match in matches]
     return ids
 
+listings_file = Path(__file__).parent / 'listings.json'
 
-with open('listings.json') as file:
+with open(listings_file) as file:
     listings = json.load(file)
 
 
@@ -70,7 +73,7 @@ if subject != "":
     """
 
 
-    with open('listings.json', 'w') as file:
+    with open(listings_file, 'w') as file:
         json.dump(listings, file)
 
     with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
