@@ -2,12 +2,7 @@ import urllib.request
 import re
 import json
 import smtplib, ssl
-
-
-port = 465  # For SSL
-sender_email = "sender@mail.com"
-receiver_email = "receiver@mail.net"
-password = "password"
+from login import *
 
 # Create a secure SSL context
 context = ssl.create_default_context()
