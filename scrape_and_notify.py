@@ -56,7 +56,7 @@ listings[search_identifier] = {**listings[search_identifier], **new_listings_ren
 
 
 
-if len(new_listings_buy.keys()) == 0 and len(new_listings_rent.keys()) == 0 and len(new_listings_buy_2.keys()):
+if len(new_listings_buy.keys()) == 0 and len(new_listings_rent.keys()) == 0 and len(new_listings_buy_2.keys()) == 0:
     sys.exit()
 
 subject = ""
@@ -69,7 +69,7 @@ if len(new_listings_buy.keys()) > 0:
 
 
 if len(new_listings_buy_2.keys()) > 0:
-    subject += f'{len(new_listings_buy.keys())} neue provisionsfreie Kaufanzeigen! '
+    subject += f'{len(new_listings_buy_2.keys())} neue provisionsfreie Kaufanzeigen! '
     mail_text += '<p>Wohnungen zu kaufen (provisionsfrei): </p>'
     mail_text += "".join([f'<a href=\"{link}\">Wohnung {id}</a><br />\n' for id, link in new_listings_buy_2.items()])
 
