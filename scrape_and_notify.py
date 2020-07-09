@@ -42,13 +42,21 @@ ids = ids_from_immoscout_listings_source(search_url)
 new_listings_buy = find_new_listings(ids, listings, search_identifier)
 listings[search_identifier] = {**listings[search_identifier], **new_listings_buy}
 
+search_identifier = 'buy_no_courtage'
+search_url = urllib.request.urlopen("https://www.immobilienscout24.de/Suche/shape/provisionsfreie-wohnung-kaufen?rented=false&shape=fWxyX0l3aGdwQWxnQH1adH1Aekt0X0BlX0BiSGtiQHZbfWlAeGhAfUx2SGlScnRBaEN8YEBfTXZdYWpBY1ltYEFzUnVIZ1NtY0BlV2FOcUNze0NtfEB1ZkBnU3RXc1BwekNtaUB_XGlvQHRIZ3NAamJAd0pnQ1R9THdMZUFnUWBOYXtAbEVlRHdJP2NBYVtxZEB7U2BAaVF6ZkFoQGZgQHhIblRmcUB8akBqWnZkQX5PbH1B&price=-250000.0&livingspace=40.0-&constructionyear=-1945&enteredFrom=result_list#/")
+ids = ids_from_immoscout_listings_source(search_url)
+new_listings_buy_2 = find_new_listings(ids, listings, search_identifier)
+listings[search_identifier] = {**listings[search_identifier], **new_listings_buy_2}
+
 search_identifier = 'rent'
 search_url = urllib.request.urlopen("https://www.immobilienscout24.de/Suche/shape/wohnung-mieten?shape=dXdxX0l9Z2VwQXBjQGNecENrcEBjSGl_QGhgQG9hQXJwQHRmQGhxQ2BAelV9eEBuVmV1Q3V9QGNtQGlAd2RBY1l1ZkA-b35Bd1ttRXNjQXxkQml_QHBfQmFoRGJsQGVVYm5AfGBCaHtHZkB8eEA.&numberofrooms=1.5-&price=-700.0&livingspace=40.0-&enteredFrom=saved_search")
 ids = ids_from_immoscout_listings_source(search_url)
 new_listings_rent = find_new_listings(ids, listings, search_identifier)
 listings[search_identifier] = {**listings[search_identifier], **new_listings_rent}
 
-if len(new_listings_buy.keys()) == 0 and len(new_listings_rent.keys()) == 0:
+
+
+if len(new_listings_buy.keys()) == 0 and len(new_listings_rent.keys()) == 0 and len(new_listings_buy_2.keys()):
     sys.exit()
 
 subject = ""
@@ -58,6 +66,13 @@ if len(new_listings_buy.keys()) > 0:
     subject += f'{len(new_listings_buy.keys())} neue Kaufanzeigen! '
     mail_text += '<p>Wohnungen zu kaufen: </p>'
     mail_text += "".join([f'<a href=\"{link}\">Wohnung {id}</a><br />\n' for id, link in new_listings_buy.items()])
+
+
+if len(new_listings_buy_2.keys()) > 0:
+    subject += f'{len(new_listings_buy.keys())} neue provisionsfreie Kaufanzeigen! '
+    mail_text += '<p>Wohnungen zu kaufen (provisionsfrei): </p>'
+    mail_text += "".join([f'<a href=\"{link}\">Wohnung {id}</a><br />\n' for id, link in new_listings_buy_2.items()])
+
 
 if len(new_listings_rent.keys()) > 0:
     mail_text += '<p>Wohnungen zu mieten:</p>'
