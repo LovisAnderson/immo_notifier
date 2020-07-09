@@ -4,7 +4,7 @@ import json
 import smtplib, ssl
 from login import *
 from pathlib import Path
-
+import sys
 
 # Create a secure SSL context
 context = ssl.create_default_context()
@@ -48,34 +48,37 @@ ids = ids_from_immoscout_listings_source(search_url)
 new_listings_rent = find_new_listings(ids, listings, search_identifier)
 listings[search_identifier] = {**listings[search_identifier], **new_listings_rent}
 
+if len(new_listings_buy.keys()) == 0 and len(new_listings_rent.keys()) == 0:
+    sys.exit()
+
 subject = ""
 mail_text = ""
 
 if len(new_listings_buy.keys()) > 0:
     subject += f'{len(new_listings_buy.keys())} neue Kaufanzeigen! '
-    mail_text = '<p>Wohnungen zu kaufen: </p>'
+    mail_text += '<p>Wohnungen zu kaufen: </p>'
     mail_text += "".join([f'<a href=\"{link}\">Wohnung {id}</a><br />\n' for id, link in new_listings_buy.items()])
 
 if len(new_listings_rent.keys()) > 0:
     mail_text += '<p>Wohnungen zu mieten:</p>'
-    mail_text += "".join([f'<a href=\"{link}\">Wohnung {id}</a><br />\n' for id, link in new_listings_buy.items()])
+    mail_text += "".join([f'<a href=\"{link}\">Wohnung {id}</a><br />\n' for id, link in new_listings_rent.items()])
 
     subject += f'{len(new_listings_rent.keys())} neue Mietanzeigen! '
 
-if subject != "":
-    message = f"""From: Me <{sender_email}>
-    To: Myself <{receiver_email}>
-    MIME-Version: 1.0
-    Content-type: text/html
-    Subject: {subject}
-    
-    {mail_text}
-    """
+
+message = f"""From: Me <{sender_email}>
+To: Myself <{receiver_email}>
+MIME-Version: 1.0
+Content-type: text/html
+Subject: {subject}
+
+{mail_text}
+"""
 
 
-    with open(listings_file, 'w') as file:
-        json.dump(listings, file)
+with open(listings_file, 'w') as file:
+    json.dump(listings, file)
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
-        server.login(sender_email, password)
-        server.sendmail(sender_email, receiver_email, message)
+with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
+    server.login(sender_email, password)
+    server.sendmail(sender_email, receiver_email, message)
