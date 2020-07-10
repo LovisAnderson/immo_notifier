@@ -2,9 +2,8 @@ import urllib.request
 import re
 import json
 import smtplib, ssl
-from login import *
+from config import *
 from pathlib import Path
-import sys
 
 # Create a secure SSL context
 context = ssl.create_default_context()
@@ -36,64 +35,35 @@ def find_new_listings(ids, listings, search_identifier):
     return new_listings
 
 
-search_identifier = 'buy'
-search_url = urllib.request.urlopen("https://www.immobilienscout24.de/Suche/shape/wohnung-kaufen?rented=false&shape=bXtyX0l3ZGdwQWprR3F6Q3hoQHFfQnBDdWRBZVVtYEF8QmFwRGVZdUhhbEBsRW1abnZEfXFAakRxUmJ8QG9WbGJAa35AZVBfXW1iQGNIdklnU2NBdWxAeWdAZVNmQmlRdHVAcEN2ZkB6VWxjQGxJfmpA&price=-240000.0&constructionyear=-1940&floor=1-&enteredFrom=saved_search")
-ids = ids_from_immoscout_listings_source(search_url)
-new_listings_buy = find_new_listings(ids, listings, search_identifier)
-listings[search_identifier] = {**listings[search_identifier], **new_listings_buy}
+for config in (lovis_cfg, shana_cfg):
+    sender_email = config['sender_email']
+    receiver_email = config['receiver_email']
+    password = config['password']
+    for search_name, url in config['searches'].items():
+        search_url = urllib.request.urlopen(url)
+        ids = ids_from_immoscout_listings_source(search_url)
+        new_listings = find_new_listings(ids, listings, search_name)
+        if len(new_listings) == 0:
+            continue
+        listings[search_name] ={**listings[search_name], **new_listings}
+        subject = ""
+        mail_text = ""
+        subject += f'{len(new_listings.keys())} neue {search_name}! '
+        mail_text += '<p>Wie waers damit? </p>'
+        mail_text += "".join([f'<a href=\"{link}\">Wohnung {id}</a><br />\n' for id, link in new_listings.items()])
 
-search_identifier = 'buy_no_courtage'
-search_url = urllib.request.urlopen("https://www.immobilienscout24.de/Suche/shape/provisionsfreie-wohnung-kaufen?rented=false&shape=fWxyX0l3aGdwQWxnQH1adH1Aekt0X0BlX0BiSGtiQHZbfWlAeGhAfUx2SGlScnRBaEN8YEBfTXZdYWpBY1ltYEFzUnVIZ1NtY0BlV2FOcUNze0NtfEB1ZkBnU3RXc1BwekNtaUB_XGlvQHRIZ3NAamJAd0pnQ1R9THdMZUFnUWBOYXtAbEVlRHdJP2NBYVtxZEB7U2BAaVF6ZkFoQGZgQHhIblRmcUB8akBqWnZkQX5PbH1B&price=-250000.0&livingspace=40.0-&constructionyear=-1945&enteredFrom=result_list#/")
-ids = ids_from_immoscout_listings_source(search_url)
-new_listings_buy_2 = find_new_listings(ids, listings, search_identifier)
-listings[search_identifier] = {**listings[search_identifier], **new_listings_buy_2}
-
-search_identifier = 'rent'
-search_url = urllib.request.urlopen("https://www.immobilienscout24.de/Suche/shape/wohnung-mieten?shape=dXdxX0l9Z2VwQXBjQGNecENrcEBjSGl_QGhgQG9hQXJwQHRmQGhxQ2BAelV9eEBuVmV1Q3V9QGNtQGlAd2RBY1l1ZkA-b35Bd1ttRXNjQXxkQml_QHBfQmFoRGJsQGVVYm5AfGBCaHtHZkB8eEA.&numberofrooms=1.5-&price=-700.0&livingspace=40.0-&enteredFrom=saved_search")
-ids = ids_from_immoscout_listings_source(search_url)
-new_listings_rent = find_new_listings(ids, listings, search_identifier)
-listings[search_identifier] = {**listings[search_identifier], **new_listings_rent}
-
-
-
-if len(new_listings_buy.keys()) == 0 and len(new_listings_rent.keys()) == 0 and len(new_listings_buy_2.keys()) == 0:
-    sys.exit()
-
-subject = ""
-mail_text = ""
-
-if len(new_listings_buy.keys()) > 0:
-    subject += f'{len(new_listings_buy.keys())} neue Kaufanzeigen! '
-    mail_text += '<p>Wohnungen zu kaufen: </p>'
-    mail_text += "".join([f'<a href=\"{link}\">Wohnung {id}</a><br />\n' for id, link in new_listings_buy.items()])
-
-
-if len(new_listings_buy_2.keys()) > 0:
-    subject += f'{len(new_listings_buy_2.keys())} neue provisionsfreie Kaufanzeigen! '
-    mail_text += '<p>Wohnungen zu kaufen (provisionsfrei): </p>'
-    mail_text += "".join([f'<a href=\"{link}\">Wohnung {id}</a><br />\n' for id, link in new_listings_buy_2.items()])
-
-
-if len(new_listings_rent.keys()) > 0:
-    mail_text += '<p>Wohnungen zu mieten:</p>'
-    mail_text += "".join([f'<a href=\"{link}\">Wohnung {id}</a><br />\n' for id, link in new_listings_rent.items()])
-
-    subject += f'{len(new_listings_rent.keys())} neue Mietanzeigen! '
-
-
-message = f"""From: Me <{sender_email}>
+        message = f"""From: Me <{sender_email}>
 To: Myself <{receiver_email}>
 MIME-Version: 1.0
 Content-type: text/html
 Subject: {subject}
-
+    
 {mail_text}
 """
 
+        with open(listings_file, 'w') as file:
+            json.dump(listings, file)
 
-with open(listings_file, 'w') as file:
-    json.dump(listings, file)
-
-with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
-    server.login(sender_email, password)
-    server.sendmail(sender_email, receiver_email, message)
+        with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
+            server.login(sender_email, password)
+            server.sendmail(sender_email, receiver_email, message)
