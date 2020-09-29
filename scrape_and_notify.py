@@ -6,20 +6,35 @@ from config import *
 from pathlib import Path
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from contextlib import closing
+
+from selenium.webdriver import Firefox
 
 # Create a secure SSL context
 context = ssl.create_default_context()
 
 
-def ids_from_immoscout_listings_source(search_url):
-    mybytes = search_url.read()
+def get_hmtl(search_url, engine='selenium'):
+    if engine == 'selenium':
+        with closing(Firefox()) as browser:
+            browser.get(url)
+            html = browser.page_source
+    elif engine == 'urllib':
+        search_url = urllib.request.urlopen(search_url)
+        html = search_url.read()
 
-    mystr = mybytes.decode("utf8")
-    search_url.close()
+        html = html.decode("utf8")
+        search_url.close()
+
+    return html
+
+
+def ids_from_immoscout_listings_source(search_url):
+    html = get_hmtl(search_url)
     pattern = r'data-go-to-expose-id=\"[0-9]+\"'  # data-go-to-expose-id="119962085"
-    matches = re.findall(pattern, mystr)
+    matches = re.findall(pattern, html)
     ids = [match.split("\"")[1] for match in matches]
-    return ids
+    return set(ids)
 
 listings_file = Path(__file__).parent / 'listings.json'
 
@@ -42,9 +57,10 @@ for config in (lovis_cfg,
     sender_email = config['sender_email']
     receiver_email = config['receiver_email']
     password = config['password']
+
     for search_name, url in config['searches'].items():
-        search_url = urllib.request.urlopen(url)
-        ids = ids_from_immoscout_listings_source(search_url)
+
+        ids = ids_from_immoscout_listings_source(url)
         new_listings = find_new_listings(ids, listings, search_name)
         if len(new_listings) == 0:
             continue
