@@ -4,8 +4,7 @@ import urllib.request
 from abc import ABC, abstractmethod
 from contextlib import closing
 from pathlib import Path
-
-from selenium.webdriver.firefox.webdriver import WebDriver
+from selenium.webdriver import Firefox
 
 
 def get_scraper(url):
@@ -17,6 +16,8 @@ def get_scraper(url):
         return Degewo
     elif 'gesobau' in url:
         return Gesobau
+    elif 'immowelt' in url:
+        return ImmoWelt
     else:
         raise NotImplementedError(f'No scraper implemented for url {url}!')
 
@@ -93,19 +94,20 @@ class ImmoScout(Scraper):
 
 
 class Gewobag(Scraper):
-    def __init__(self, url, identifier, engine='selenium', listings_file='listings.json'):
+    def __init__(self, url, identifier, engine='urllib', listings_file='listings.json'):
         super(Gewobag, self).__init__(url, identifier, engine, listings_file)
 
     def listings_from_html(self):
         pattern = r"""<a class="angebot-header" href=".*">"""
-        matches = re.findall(pattern, self.html)
+        html = self.html.split('<section class="overview-list small-layout aktuelle-mietangebote">')[0]
+        matches = re.findall(pattern, html)
         urls = [match.split("\"")[-2].replace("\'", "") for match in matches]
         ids = [url.split('/')[-2] for url in urls]
         return {ID: urls[i] for i, ID in enumerate(ids)}
 
 
 class Degewo(Scraper):
-    def __init__(self, url, identifier, engine='selenium', listings_file='listings.json'):
+    def __init__(self, url, identifier, engine='urllib', listings_file='listings.json'):
         super(Degewo, self).__init__(url, identifier, engine, listings_file)
 
     def listings_from_html(self):
@@ -120,15 +122,31 @@ class Degewo(Scraper):
 
 
 class Gesobau(Scraper):
-    def __init__(self, url, identifier, engine='selenium', listings_file='listings.json'):
+    def __init__(self, url, identifier, engine='urllib', listings_file='listings.json'):
         super(Gesobau, self).__init__(url, identifier, engine, listings_file)
 
     def listings_from_html(self):
         pattern = r"""<a href="/wohnung/.*.html">"""
 
-        url_stem = 'www.gesobau.de/'
+        url_stem = 'https://www.gesobau.de'
         matches = re.findall(pattern, self.html)
         url_relatives = [match.split('\"')[1] for match in matches]
         urls = [url_stem + url for url in url_relatives]
         ids = [match.split('/')[2][:-7] for match in matches]
+        return {ID: urls[i] for i, ID in enumerate(ids)}
+
+
+class ImmoWelt(Scraper):
+    def __init__(self, url, identifier, engine='urllib', listings_file='listings.json'):
+        super(ImmoWelt, self).__init__(url, identifier, engine, listings_file)
+
+    def listings_from_html(self):
+
+        pattern = r"""<a href="/expose/.*"></a>"""
+
+        url_stem = 'https://www.immowelt.de'
+        matches = re.findall(pattern, self.html)
+        url_relatives = [match.split('\"')[1] for match in matches]
+        urls = [url_stem + url for url in url_relatives]
+        ids = [url.split('/')[2] for url in url_relatives]
         return {ID: urls[i] for i, ID in enumerate(ids)}
