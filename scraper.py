@@ -18,6 +18,8 @@ def get_scraper(url):
         return Gesobau
     elif 'immowelt' in url:
         return ImmoWelt
+    elif 'immonet' in url:
+        return Immonet
     else:
         raise NotImplementedError(f'No scraper implemented for url {url}!')
 
@@ -103,6 +105,20 @@ class Gewobag(Scraper):
         matches = re.findall(pattern, html)
         urls = [match.split("\"")[-2].replace("\'", "") for match in matches]
         ids = [url.split('/')[-2] for url in urls]
+        return {ID: urls[i] for i, ID in enumerate(ids)}
+
+
+class Immonet(Scraper):
+    def __init__(self, url, identifier, engine='urllib', listings_file='listings.json'):
+        super().__init__(url, identifier, engine, listings_file)
+        self.base_url = "https://www.immonet.de"
+
+    def listings_from_html(self):
+        pattern = r'href="/angebot/[0-9]+'
+        html = self.html
+        matches = re.findall(pattern, html)
+        urls = [self.base_url + match.split('"')[1] for match in matches]
+        ids = [match.split('/')[-1] for match in matches]
         return {ID: urls[i] for i, ID in enumerate(ids)}
 
 
