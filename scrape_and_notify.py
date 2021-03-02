@@ -52,8 +52,9 @@ def find_new_listings(ids, listings, search_identifier):
     return new_listings
 
 
-for config in (lovis_cfg,
-               shana_cfg):
+for config in (
+        lovis_cfg,
+):
     sender_email = config['sender_email']
     receiver_email = config['receiver_email']
     password = config['password']
@@ -68,9 +69,3 @@ for config in (lovis_cfg,
         mailer = Mailer(sender_email, password)
         mailer.mail_from_properties(new_listings, search_name, receiver_email)
         mailer.send_mail(receiver_email)
-
-
-
-
-
-
